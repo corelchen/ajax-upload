@@ -28,12 +28,14 @@
             accept : ['*'],
             name: 'file',
             method: 'POST',
-            action: '/',
+            url: '/',
             data: false,
             onSubmit: function(){
                 return true;
             },
-            onComplete: function(){}
+            onComplete: function(){
+                return true;
+            }
         },options);
 
         //Iterate over the current set of matched elements
@@ -41,14 +43,13 @@
             //create form
             var button = $(this);
             button.css('position','relative');
-            var methods = {
-                setData: function(data) {
-                    settings.data = data;
-                }
-            };
+            button.setData = function(data) {
+                settings.data = data;
+            }
+
 
             var form = $('<form style="margin: 0px !important; padding: 0px !important; position: absolute; top: 0px; left: 0px;"' +
-                ' method="' + settings.method + '" enctype="multipart/form-data" action="' + settings.action +'">' +
+                ' method="' + settings.method + '" enctype="multipart/form-data" action="' + settings.url +'">' +
                 ' <input name="' + settings.name + '" type="file" /></form>');
 
             var input = form.find('input[name=' + settings.name + ']');
@@ -63,7 +64,7 @@
 
             input.change(function(e){
                 form.find('input[type=hidden]').remove();
-                settings.onSubmit.call(methods, $(this));
+                settings.onSubmit.call(button, $(this));
                 //add data
                 if (settings.data) {
                     $.each(settings.data, function(n,v){
@@ -85,18 +86,19 @@
                 $(document.body).append(ajaxUploadIframe);
             }
 
+            var onUpload = function(){
+                $(form).find('input[type=file]').removeAttr('disabled');
+                var response = $(this).contents().find('html body').text();
+                settings.onComplete.call(button, response);
+                ajaxUploadIframe.unbind();
+            };
+
 
 
             //on file submit
             form.submit(function(e){
-
                 //set iframe onload event
-                ajaxUploadIframe.load(function(){
-                    $(form).find('input[type=file]').removeAttr('disabled');
-                    var response = $(this).contents().find('html body').html();
-                    settings.onComplete(response);
-                    ajaxUploadIframe.unbind();
-                });
+                ajaxUploadIframe.load(onUpload);
                 form.attr('target','__ajaxUploadIFRAME');
                 e.stopPropagation();
 
